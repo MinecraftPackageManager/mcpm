@@ -41,12 +41,31 @@ end
 
 local ccEnv = deepcopy(_G)
 
-do
-  local type,error = type,error
+local function prepareEnv(ccEnv, eventQueue)
+  local type,error,pcall,require,setfenv,getfenv = type,error,pcall,require,setfenv,getfenv
   local cyield = coroutine.yield
+  local oldenv = getfenv()
+  
+  -- make it so every new function has ccEnv as the env
+  setfenv(1,ccEnv)
+  
+  eventQueue.n = 0
+  eventQueue.c = 1
   
   ccEnv.string.dump = nil
   ccEnv.debug = nil
+  ccEnv.require = nil
+  ccEnv.package = nil
+  
+  ccEnv.getfenv = function(f)
+    if getfenv(f) == getfenv(0) then
+      return ccEnv
+    elseif type(f) == "number" then
+      return getfenv(f+1)
+    else
+      return getfenv(f)
+    end
+  end
   
   ccEnv.getmetatable = function(t)
     if type(t) == string then
@@ -55,6 +74,12 @@ do
   end
   
   ccEnv.os.pullEventRaw = cyield
+  
+  ccEnv.os.queueEvent = function(n,a,b,c,d,e)
+    local x = eventQueue.n
+    eventQueue[x] = {n,a,b,c,d,e}
+    eventQueue.n = x + 1
+  end
   
   ccEnv.os.pullEvent = function(_evt)
     while true do
@@ -69,13 +94,21 @@ do
   
   if pcall(require,"socket") then
     -- enable HTTP API
+    
   end
   
+  setfenv(1,oldenv)
 end
 
-function M.runCC(func)
+local eventQueue = {}
+prepareEnv(ccEnv, eventQueue)
+
+function M.runCC(func, env)
   setfenv(func, ccEnv)
-  -- TODO
+  -- loop
+  while true do
+    
+  end
 end
 
 return M
