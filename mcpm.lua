@@ -10,6 +10,10 @@ local systems = {
   Lua52 = "Lua 5.2"
   Lua51 = "Lua 5.1"
 }
+
+-- dogecoin donation address
+local dogecoinAddress = "DJphzV7NPn6AT36N4LxDN67fLCzGX3xNB7"
+
 -- system detection code
 if os.pullEventRaw then
   system = systems.CC
