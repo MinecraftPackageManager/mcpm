@@ -55,7 +55,7 @@ end
 local ccEnv = deepcopy(_G)
 
 local function prepareEnv(ccEnv, eventQueue)
-  local type,error,pcall,require,setfenv,getfenv = type,error,pcall,require,setfenv,getfenv
+  local type,error,pcall,require,setfenv,getfenv,getmetatable = type,error,pcall,require,setfenv,getfenv,getmetatable
   local cyield = coroutine.yield
   local oldenv = getfenv()
   
@@ -81,9 +81,10 @@ local function prepareEnv(ccEnv, eventQueue)
   end
   
   ccEnv.getmetatable = function(t)
-    if type(t) == string then
+    if type(t) == "string" then
       error("Attempt to get the string metatable")
     end
+    return getmetatable(t)
   end
   
   ccEnv.os.pullEventRaw = cyield
