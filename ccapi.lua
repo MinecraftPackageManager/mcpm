@@ -51,10 +51,11 @@ do -- table copy https://gist.github.com/SoniEx2/fc5d3614614e4e3fe131
 -- (or turn it into table.copy(table,deep) where deep is a boolean)
   shallowcopy,deepcopy=shallow,deep
 end
-
+M.shallowcopy, M.deepcopy = shallowcopy, deepcopy
 local ccEnv = deepcopy(_G)
 
-local function prepareEnv(ccEnv, eventQueue)
+-- Prepare a _G clone
+M.prepareEnv = function(ccEnv, eventQueue)
   local type,error,pcall,require,setfenv,getfenv,getmetatable = type,error,pcall,require,setfenv,getfenv,getmetatable
   local cyield = coroutine.yield
   local oldenv = getfenv()
@@ -62,9 +63,25 @@ local function prepareEnv(ccEnv, eventQueue)
   -- make it so every new function has ccEnv as the env
   setfenv(1,ccEnv)
   
-  eventQueue.n = 0
-  eventQueue.c = 1
+  -- setup eventQueue
+  eventQueue.count = 0
+  eventQueue.current = 1
+  function eventQueue:push(evt,p1,p2,p3,p4,p5)
+    local newcount = self.count + 1
+    self[newcount] = {evt, p1, p2, p3, p4, p5}
+    self.count = newcount
+  end
+  function eventQueue:pop()
+    if self.count < self.current then
+      return nil
+    else
+      local current = self.current
+      self.current = current + 1
+      return self[current]
+    end
+  end
   
+  -- setup environment
   ccEnv.string.dump = nil
   ccEnv.debug = nil
   ccEnv.require = nil
@@ -89,10 +106,9 @@ local function prepareEnv(ccEnv, eventQueue)
   
   ccEnv.os.pullEventRaw = cyield
   
-  ccEnv.os.queueEvent = function(n,a,b,c,d,e)
-    local x = eventQueue.n
-    eventQueue[x] = {n,a,b,c,d,e}
-    eventQueue.n = x + 1
+  ccEnv.os.queueEvent = function(evt,p1,p2,p3,p4,p5)
+    if n == nil then error() end -- todo test this
+    eventQueue:push(evt,p1,p2,p3,p4,p5)
   end
   
   ccEnv.os.pullEvent = function(_evt)
@@ -108,7 +124,7 @@ local function prepareEnv(ccEnv, eventQueue)
   
   if pcall(require,"socket") then
     -- enable HTTP API
-    
+    print("ccapi doesn't support HTTP API yet")
   end
   
   setfenv(1,oldenv)
@@ -117,9 +133,33 @@ end
 local eventQueue = {}
 prepareEnv(ccEnv, eventQueue)
 
+local function scan(t, what, callback)
+  local toScan = {t}
+  while next(toScan) do
+    local k,v = next(toScan)
+    toScan[k] = nil
+    if type(v) == "table" then
+      for x,y in pairs(v) do
+        if type(y) == what then
+          y = callback(y)
+        end
+        if type(y) == "table" then
+          table.insert(toScan, y)
+        end
+        v[x] = y
+      end
+    else
+      error(string.format("Table expected, got %s (%s)", type(v), v))
+    end
+  end
+end
+
 function M.runCC(func, env)
-  setfenv(func, ccEnv)
-  -- loop
+  scan(env, "function", function(f)
+      return setfenv(function(...) return f(...) end, env)
+    end)
+  setfenv(func, env)
+  -- main loop
   while true do
     
   end
