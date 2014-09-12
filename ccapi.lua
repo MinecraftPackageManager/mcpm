@@ -59,10 +59,10 @@ M.prepareEnv = function(ccEnv, eventQueue)
   local type,error,pcall,require,setfenv,getfenv,getmetatable = type,error,pcall,require,setfenv,getfenv,getmetatable
   local cyield = coroutine.yield
   local oldenv = getfenv()
-  
+
   -- make it so every new function has ccEnv as the env
   setfenv(1,ccEnv)
-  
+
   -- setup eventQueue
   eventQueue.count = 0
   eventQueue.current = 1
@@ -80,13 +80,13 @@ M.prepareEnv = function(ccEnv, eventQueue)
       return self[current]
     end
   end
-  
+
   -- setup environment
   ccEnv.string.dump = nil
   ccEnv.debug = nil
   ccEnv.require = nil
   ccEnv.package = nil
-  
+
   ccEnv.getfenv = function(f)
     if getfenv(f) == getfenv(0) then
       return ccEnv
@@ -96,21 +96,21 @@ M.prepareEnv = function(ccEnv, eventQueue)
       return getfenv(f)
     end
   end
-  
+
   ccEnv.getmetatable = function(t)
     if type(t) == "string" then
       error("Attempt to get the string metatable")
     end
     return getmetatable(t)
   end
-  
+
   ccEnv.os.pullEventRaw = cyield
-  
+
   ccEnv.os.queueEvent = function(evt,p1,p2,p3,p4,p5)
     if n == nil then error() end -- todo test this
     eventQueue:push(evt,p1,p2,p3,p4,p5)
   end
-  
+
   ccEnv.os.pullEvent = function(_evt)
     while true do
       local a,b,c,d,e,f = cyield()
@@ -121,12 +121,12 @@ M.prepareEnv = function(ccEnv, eventQueue)
       end
     end
   end
-  
+
   if pcall(require,"socket") then
     -- enable HTTP API
     print("ccapi doesn't support HTTP API yet")
   end
-  
+
   setfenv(1,oldenv)
 end
 
@@ -137,9 +137,9 @@ M.prepareEnv(ccEnv, eventQueue)
 local function scan(t, what, callback)
   local toScan = {t}
   local change = setmetatable({}, {__index = function(t,k)
-      local v = callback(k)
-      rawset(t,k,v)
-    end})
+        local v = callback(k)
+        rawset(t,k,v)
+      end})
   while next(toScan) do
     local k,v = next(toScan)
     toScan[k] = nil
@@ -160,6 +160,9 @@ local function scan(t, what, callback)
 end
 
 function M.runCC(func, env)
+  if not env then
+    env = getfenv()
+  end
   scan(env, "function", function(f)
       if getfenv(f) == env then return f end
       return setfenv(function(...) return f(...) end, env)
@@ -167,7 +170,7 @@ function M.runCC(func, env)
   setfenv(func, env)
   -- main loop
   while true do
-    
+
   end
 end
 
