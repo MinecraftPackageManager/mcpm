@@ -133,15 +133,20 @@ end
 local eventQueue = {}
 M.prepareEnv(ccEnv, eventQueue)
 
+-- TODO make this scan and modify keys
 local function scan(t, what, callback)
   local toScan = {t}
+  local change = setmetatable({}, {__index = function(t,k)
+      local v = callback(k)
+      rawset(t,k,v)
+    end})
   while next(toScan) do
     local k,v = next(toScan)
     toScan[k] = nil
     if type(v) == "table" then
       for x,y in pairs(v) do
         if type(y) == what then
-          y = callback(y)
+          y = change[y]
         end
         if type(y) == "table" then
           table.insert(toScan, y)
@@ -156,6 +161,7 @@ end
 
 function M.runCC(func, env)
   scan(env, "function", function(f)
+      if getfenv(f) == env then return f end
       return setfenv(function(...) return f(...) end, env)
     end)
   setfenv(func, env)
