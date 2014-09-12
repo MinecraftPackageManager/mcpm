@@ -131,7 +131,7 @@ M.prepareEnv = function(ccEnv, eventQueue)
 end
 
 local eventQueue = {}
-prepareEnv(ccEnv, eventQueue)
+M.prepareEnv(ccEnv, eventQueue)
 
 local function scan(t, what, callback)
   local toScan = {t}
