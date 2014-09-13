@@ -112,14 +112,11 @@ M.prepareEnv = function(ccEnv, eventQueue)
   end
 
   ccEnv.os.pullEvent = function(_evt)
-    while true do
-      local a,b,c,d,e,f = cyield()
-      if a == _evt then
-        return a,b,c,d,e,f
-      elseif a == "terminate" then
-        error("Terminated")
-      end
+    local a,b,c,d,e,f = cyield(_evt)
+    if a == "terminate" then
+      error("Terminated")
     end
+    return a,b,c,d,e,f
   end
 
   if pcall(require,"socket") then
