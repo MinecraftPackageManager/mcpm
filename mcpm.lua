@@ -2,27 +2,6 @@
   So yeah, we're doing a package manager...
   ]]
 
-do
-  local getline = function(str, lno)
-    if lno == 0 then
-      return str:match("^([^\n]*)")
-    end
-    return str:match("^" .. ("[^\n]*\n"):rep(lno) .. "([^\n]*)")
-  end
-  local dsep = getline(package.config, 0)
-  local psep = getline(package.config, 1)
-  local name = getline(package.config, 2)
-  local t = {
-    D = dsep,
-    P = psep,
-    N = name,
-    ['%'] = '%' -- so that both % and %% are valid ways to do a single %
-  }
-  package.path = string.gsub(".%D%N%D%N.lua%P", "%%(.)", t) .. package.path
-end
-
-ccapi_DebugKernel = true
-require("ccapi")
 local system = _VERSION
 
 -- "easy" way to support new systems
